@@ -1,26 +1,13 @@
 #include <Arduino.h>
 
-#include <ESP8266WiFi.h>
-#include <ESP8266WebServer.h>
-#include <ESP8266mDNS.h>
-
 #include "FastLED.h"
 
-#include "send_progmem.h"
-#include "html_index.h"
-
-
-#define HOSTNAME      "laermampel" // mDNS-adress (http://HOSTNAME.local/)
-#define SSID          "Laermampel"
-#define PASSWD        "12341234"
 #define LEDS_PIN 4
 #define NUM_LEDS 5
 #define MAX_CURRENT 500
 #define FRAMES_PER_SECOND 30
 #define T1_BUFF_SIZE 200
 #define T2_BUFF_SIZE 5
-
-ESP8266WebServer server(80);     // handles networking and provides http requests
 
 CRGB leds[NUM_LEDS];
 uint8_t brightness = 255;
@@ -36,9 +23,7 @@ uint16_t t2Buff_i = 0;
 double envbums = 0;
 
 // Functions
-void serveIndex();
-void handleSet();
-void handleOther();
+void handleSerial();
 void setLEDs(uint8_t value);
 
 void setup(void){

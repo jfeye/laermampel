@@ -75,7 +75,7 @@ void setup(void){
 
 void loop(void){
   delayMicroseconds(100);
-
+  
   uint16_t val = analogRead(A0);
   if(val > 498) t1Buff[t1Buff_i] = val-498;
   else t1Buff[t1Buff_i] = 498 - val;
