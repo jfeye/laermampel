@@ -3,3 +3,5 @@
 .gcc-flags.json
 .piolibdeps
 lib/FastLED
+.pioenvs
+.piolibdeps
