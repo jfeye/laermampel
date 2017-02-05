@@ -3,7 +3,7 @@
 #include "FastLED.h"
 
 #define LEDS_PIN 4
-#define NUM_LEDS 5
+#define NUM_LEDS 60
 #define MAX_CURRENT 500
 #define FRAMES_PER_SECOND 30
 #define T1_BUFF_SIZE 200
@@ -43,6 +43,8 @@ void setup(void){
 
 void loop(void){
   uint16_t val = analogRead(A0);
+  float y = 1.0;
+
   t1Buff[t1Buff_i] = val;
   t1Buff_i++;
 
@@ -67,6 +69,14 @@ void loop(void){
     average /= T2_BUFF_SIZE;
     if(average>500) average -= 500;
     else average = 0;
+
+    if (sensitivity >= 128) {
+      y = (sensitivity - 128)*3.0/128.0 + 1.0;
+      average = (uint16_t)(average * y);
+    } else {
+      y = (128 - sensitivity)*3.0/128.0 + 1.0;
+      average = (uint16_t)(average / y);
+    }
 
     if (average > envbums) envbums = average;
     else if (average != envbums) envbums -= 0.5 + (envbums-average)/16.0;
