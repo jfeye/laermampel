@@ -34,6 +34,11 @@ void setup(void){
   brightness = EEPROM.read(0);
   sensitivity = EEPROM.read(1);
 
+  delay(10);
+  Serial.write(0xff);
+  Serial.write(brightness);
+  Serial.write(sensitivity);
+
   WiFi.mode(WIFI_AP);
   WiFi.disconnect();
   WiFi.softAP(SSID,PASSWD);
