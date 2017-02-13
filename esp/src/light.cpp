@@ -4,6 +4,8 @@
 #include <ESP8266WebServer.h>
 #include <ESP8266mDNS.h>
 
+#include <EEPROM.h>
+
 #include "send_progmem.h"
 #include "html_index.h"
 
@@ -18,6 +20,7 @@ ESP8266WebServer server(80);     // handles networking and provides http request
 void serveIndex();
 void handleSet();
 void handleOther();
+void handleGet();
 
 uint8_t brightness = 0;
 uint8_t sensitivity = 0;
@@ -25,13 +28,20 @@ uint8_t sensitivity = 0;
 void setup(void){
   // Set up the debug connection
   Serial.begin(9600);
+  delay(10);
+
+  EEPROM.begin(512);
+  brightness = EEPROM.read(0);
+  sensitivity = EEPROM.read(1);
 
   WiFi.mode(WIFI_AP);
   WiFi.disconnect();
   WiFi.softAP(SSID,PASSWD);
+
   // Set up HTTP-Server
   server.on("/",serveIndex);
   server.on("/set",handleSet);
+  server.on("/get",handleGet);
   server.onNotFound(handleOther);
   server.begin();
 
@@ -71,8 +81,24 @@ void handleOther() {
   server.send ( 404, "text/plain", message );
 }
 
+void handleGet() {
+  for (int i = 0; i < server.args(); i++) {
+    if (server.argName(i) == "value") {
+       if (server.arg(i) == "brightness") {
+         server.send(200, "text/plain", String(brightness, DEC));
+       } else if (server.arg(i) == "sensitivity") {
+         server.send(200, "text/plain", String(sensitivity, DEC));
+       }
+     } else {
+       server.send(404, "text/html", "Value not found");
+     }
+   }
+}
+
 void handleSet() {
   uint8_t res = 0;
+  uint8_t old_brightness = brightness;
+  uint8_t old_sensitivity = sensitivity;
   for (int i = 0; i < server.args(); i++) {
     if (server.argName(i) == "brightness") {
       brightness = atoi(server.arg(i).c_str());
@@ -82,13 +108,18 @@ void handleSet() {
         res = 1; // error arg not found
     }
     if (res != 0) {
-      server.send(200, "text/html", "ERROR on " + server.argName(i) + " : " + server.arg(i));
+      server.send(404, "text/html", "ERROR on " + server.argName(i) + " : " + server.arg(i));
     }
   }
   if (res == 0 && server.args() > 0) {
     Serial.write(0xff);
     Serial.write(brightness);
     Serial.write(sensitivity);
+    if (old_brightness != brightness)
+      EEPROM.write(0, brightness);
+    if (old_sensitivity != sensitivity)
+      EEPROM.write(1, sensitivity);
+    EEPROM.commit();
     server.send(200, "text/html", "OK");
   } else {
     server.send(404, "text/html", "ERROR");

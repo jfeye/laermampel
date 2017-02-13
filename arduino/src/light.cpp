@@ -3,7 +3,7 @@
 #include "FastLED.h"
 
 #define LEDS_PIN 4
-#define NUM_LEDS 60
+#define NUM_LEDS 48
 #define MAX_CURRENT 500
 #define FRAMES_PER_SECOND 30
 #define T1_BUFF_SIZE 100
@@ -29,7 +29,7 @@ uint8_t start_sensing = 32;
 uint8_t peak_threshold = 64;
 uint16_t oldval = 0;
 
-double envbums = 0;
+double envelope = 0;
 
 // Functions
 void handleSerial();
@@ -49,15 +49,13 @@ void loop(void){
   uint16_t val = analogRead(A0);
 
   val = val > zeroline ? val - zeroline : zeroline - val;
-  //if (oldval >= val) {
-  //  if (oldval - val > peak_threshold) val = oldval - peak_threshold;
-  //} else {
-  //  if (val - oldval > peak_threshold) val = oldval + peak_threshold;
-  //}
-  if (val < start_sensing) val = 0;
-  else if (val < 512) val = (uint16_t)(((float)(val - start_sensing))/((float)(512 - start_sensing))*512);
-  else val = 512;
-  //val = val / 2;
+  if (val < start_sensing) {
+	 val = 0;
+  } else if (val < 512) {
+	val = (uint16_t)(((float)(val - start_sensing))/((float)(512 - start_sensing))*512);  
+  } else {
+	val = 512;  
+  }
   oldval = val;
   //Serial.println(val);
 
@@ -85,15 +83,11 @@ void loop(void){
         average += t2Buff[i];
     }
     average /= T2_BUFF_SIZE;
-    //if (average > zeroline) average -= zeroline;
-    //else average = 0;
 
     if (average < peak_threshold)
       average = 0;
-    else //if (average <= 512)
+    else 
       average = (uint16_t)( 255.0 * (pow(2, ( ((float)(average - peak_threshold)) / ((float)(512-peak_threshold)) ))-1) / 1.0 );
-      //average = (uint16_t)(( ((float)(average - peak_threshold)) / ((float)(512-peak_threshold)) ) * 512.0);
-    //else average = 512;
     if (sensitivity >= 128) {
       y = (sensitivity - 128)*3.0/128.0 + 1.0;
       average = (uint16_t)(average * y);
@@ -103,16 +97,15 @@ void loop(void){
     }
     //Serial.println(average);
 
-    if (average >= envbums)
-      envbums += (average-envbums)/32.0;
-      //envbums = average;
+    if (average >= envelope)
+      envelope += (average-envelope)/32.0;
     else
-      envbums -= 0.1 + (envbums-average)/64.0;
+      envelope -= 0.1 + (envelope-average)/64.0;
 
-    if(envbums>255) envbums = 255;
-    setLEDs(envbums);
-    //Serial.println(String(average) + " " + String(envbums));
-    Serial.println(envbums);
+    if(envelope>255) envelope = 255;
+    setLEDs(envelope);
+    //Serial.println(String(average) + " " + String(envelope));
+    Serial.println(envelope);
     nextFrame = millis() + (1000/FRAMES_PER_SECOND);
   }
 }
