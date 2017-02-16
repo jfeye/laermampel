@@ -21,52 +21,64 @@ void serveIndex();
 void handleSet();
 void handleOther();
 void handleGet();
+void sendSerial();
 
 uint8_t brightness = 0;
 uint8_t sensitivity = 0;
 
-void setup(void){
-  // Set up the debug connection
-  Serial.begin(9600);
-  delay(10);
-
-  EEPROM.begin(512);
-  brightness = EEPROM.read(0);
-  sensitivity = EEPROM.read(1);
-
-  delay(10);
+void sendSerial() {
   Serial.write(0xff);
   Serial.write(brightness);
   Serial.write(sensitivity);
+}
 
+void setup(void){
+  // Set up the debug connection
+  Serial.begin(9600);
+  delay(250);
+
+  // read status from EEPROM
+  EEPROM.begin(512);
+  delay(250);
+  brightness = EEPROM.read(0);
+  sensitivity = EEPROM.read(1);
+  
+  // Set up WiFi
   WiFi.mode(WIFI_AP);
   WiFi.disconnect();
-  WiFi.softAP(SSID,PASSWD);
-
-  // Set up HTTP-Server
-  server.on("/",serveIndex);
-  server.on("/set",handleSet);
-  server.on("/get",handleGet);
-  server.onNotFound(handleOther);
-  server.begin();
+  WiFi.softAP(SSID, PASSWD);
 
   IPAddress myIP = WiFi.softAPIP();
   Serial.print("\nAP IP address: ");
   Serial.println(myIP);
 
   // Set MDNS address ("hostname.local")
-  if (!MDNS.begin(HOSTNAME,myIP)) {
-    Serial.println("Fehler: MDNS fail");
+  if (MDNS.begin(HOSTNAME, myIP)) {
+    Serial.print("AP mDNS address: http://");
+    Serial.print(HOSTNAME);
+    Serial.println(".local/");
+  } else {
+    Serial.println("Error: mDNS fail");
   }
+
+  // Set up HTTP-Server
+  server.on("/", serveIndex);
+  server.on("/set", handleSet);
+  server.on("/get", handleGet);
+  server.onNotFound(handleOther);
+  server.begin();
+
+  // light goes on
+  sendSerial();
 
   Serial.println("Setup finished!\n");
 }
 
-void loop(void){
+void loop(void) {
   server.handleClient();
 }
 
-void serveIndex(){
+void serveIndex() {
   server.send(200, "text/html", FPSTR(html_index));
   sendProgmem(&server,html_index);
 }
@@ -88,14 +100,16 @@ void handleOther() {
 
 void handleGet() {
   for (int i = 0; i < server.args(); i++) {
-    if (server.argName(i) == "value") {
-       if (server.arg(i) == "brightness") {
+    if (server.argName(i) == "v") {
+       if (server.arg(i) == "b") {
          server.send(200, "text/plain", String(brightness, DEC));
-       } else if (server.arg(i) == "sensitivity") {
+       } else if (server.arg(i) == "s") {
          server.send(200, "text/plain", String(sensitivity, DEC));
+       } else {
+         server.send(404, "text/plain", "Invalid value: " + server.arg(i));
        }
      } else {
-       server.send(404, "text/html", "Value not found");
+       server.send(404, "text/plain", "Invalid argument: " + server.argName(i));
      }
    }
 }
@@ -104,10 +118,11 @@ void handleSet() {
   uint8_t res = 0;
   uint8_t old_brightness = brightness;
   uint8_t old_sensitivity = sensitivity;
+
   for (int i = 0; i < server.args(); i++) {
-    if (server.argName(i) == "brightness") {
+    if (server.argName(i) == "b") {
       brightness = atoi(server.arg(i).c_str());
-    } else if (server.argName(i) == "sensitivity") {
+    } else if (server.argName(i) == "s") {
       sensitivity = atoi(server.arg(i).c_str());
     } else {
         res = 1; // error arg not found
@@ -116,14 +131,15 @@ void handleSet() {
       server.send(404, "text/html", "ERROR on " + server.argName(i) + " : " + server.arg(i));
     }
   }
+
   if (res == 0 && server.args() > 0) {
-    Serial.write(0xff);
-    Serial.write(brightness);
-    Serial.write(sensitivity);
-    if (old_brightness != brightness)
+    sendSerial();
+    if (old_brightness != brightness && brightness > 0) {
       EEPROM.write(0, brightness);
-    if (old_sensitivity != sensitivity)
+    }
+    if (old_sensitivity != sensitivity && sensitivity > 0) {
       EEPROM.write(1, sensitivity);
+    }
     EEPROM.commit();
     server.send(200, "text/html", "OK");
   } else {
