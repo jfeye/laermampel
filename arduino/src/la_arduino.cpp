@@ -2,6 +2,9 @@
 
 #include "FastLED.h"
 
+#include <avr/pgmspace.h>
+#include "dbLUT.h"
+
 #define LEDS_PIN 4
 #define NUM_LEDS 48
 #define MAX_CURRENT 500
@@ -20,11 +23,11 @@ uint8_t valBufMax_i = 0;
 float valBufAvg[VAL_BUF_AVG_SIZE];
 uint8_t valBufAvg_i = 0;
 
-float* dbLUT;
 float avg = 0.0;
 float envelope = 0.0;
 float scale = 1.0;
 uint16_t val = 0;
+uint16_t maxVal = 0;
 
 uint16_t baseline = 498;
 uint8_t green_lim = 0;
@@ -42,14 +45,14 @@ uint8_t inBuff[3];
 void handleSerial();
 void setLEDs(uint8_t value);
 uint8_t receiveBytes(uint8_t bytes);
-void genLUT();
+float scaleDb(uint16_t val);
 
 
 void setup(void){
 	// Set up the debug connection
-	Serial1.begin(9600);
+	Serial.begin(9600);
 
-	genLUT();
+	maxVal = max(baseline, 1023-baseline);
 
 	// LED setup
 	FastLED.addLeds<WS2812B, LEDS_PIN, GRB>(leds, NUM_LEDS);
@@ -57,32 +60,12 @@ void setup(void){
 }
 
 
-/*
-	Returns a float[] of size max(baseline, 1023-baseline)+1
-	in range [0.0, 255.0]	with logarithmic scale.
-	255.0 represents 0dB
-	The dB value for 0.0 depends on max(baseline, 1023-baseline)
-	10 bit ADC => 20*log10(1/2^10) = -60.206 dB at most
-*/
-void genLUT() {
-	uint16_t max = max(baseline, 1023-baseline);
-  if (dbLUT != 0) {
-    delete [] dbLUT;
-  }
-  dbLUT = new float [max+1];
-
-	for (float i=1; i<=max; i++) {
-		dbLUT[i] = 20.0 * log10(i/max);
-	}
-	// to avoid NaN at i=0 (log10(0)=-inf) set minimum volume to
-	// half of dbLUT[1], e.g. ~6dB
-	float min = dbLUT[1] - 20.0 * log10(2);
-	dbLUT[0] = min;
-
-	// scale from dB to [0.0, 255.0]
-	for (uint16_t i=0; i<=max; i++) {
-		dbLUT[i] = 255.0 * (min - dbLUT[i]) / min;
-	}
+float scaleDb(uint16_t val) {
+	return min(max(
+			0.0,
+			255.0 * (dbLUT[1023-maxVal] - dbLUT[val + (1023-maxVal)]) / dbLUT[1023-maxVal] ),
+			255.0
+	);
 }
 
 
@@ -90,7 +73,7 @@ void loop(void) {
 	// read mic signal in [0, 1023] centered around baseline
 	val = analogRead(A0);
 
-	// get absolute value of mic signal in [0, max(baseline, 1023-baseline)]
+	// get absolute value of mic signal in [0, maxVal]
 	val = val > baseline ? val - baseline : baseline - val;
 
 	// scale mic signal according to sensitivity slider
@@ -102,11 +85,11 @@ void loop(void) {
     val = (uint16_t)(val / scale);
   }
 
-	// clip mic signal to [0, max(baseline, 1023-baseline)]
-	val = min(max(0, val), max(baseline, 1023-baseline));
+	// clip mic signal to [0, maxVal]
+	val = min(max(0, val), maxVal);
 
 	if (millis() < nextFrame) {
-		valBufMax[valBufMax_i] = dbLUT[val];
+		valBufMax[valBufMax_i] = scaleDb(val);
 		valBufMax_i = (valBufMax_i + 1) % VAL_BUF_MAX_SIZE;
 		if (valBufMax_i == 0) {
 			valBufAvg[valBufAvg_i] = 0.0;
@@ -172,9 +155,9 @@ void setLEDs(uint8_t value){
 
 
 void handleSerial(){
-	while (Serial1.available()) {
+	while (Serial.available()) {
 		//detect message start
-		if (Serial1.read() == 0xFF) {
+		if (Serial.read() == 0xFF) {
 			if (receiveBytes(2)) {
 				brightness = inBuff[0];
 				sensitivity = inBuff[1];
@@ -186,13 +169,13 @@ void handleSerial(){
 
 uint8_t receiveBytes(uint8_t bytes) {
 	uint32_t ts = millis();
-	while (Serial1.available() < bytes && millis()-ts < TIMEOUT){
+	while (Serial.available() < bytes && millis()-ts < TIMEOUT){
 		delay(1);
 	}
 	if (millis()-ts >= TIMEOUT) {
-		Serial.println("Serial timeout");
+		Serial.println(F("Serial timeout"));
 	}
-	uint8_t n = Serial1.readBytes(inBuff, bytes);
+	uint8_t n = Serial.readBytes(inBuff, bytes);
 	if (n != bytes) {
 		return 0;
 	}

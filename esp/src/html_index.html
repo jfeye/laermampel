@@ -2,18 +2,19 @@
 <!--
   Run this page through
   https://htmlcompressor.com/compressor/
+  and remove linebreaks
   before pasting it in html_index.h
 -->
 <html>
 <head lang="de">
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>L&auml;rmampel</title>
+  <title>Laermampel</title>
   <script>
     function gebID(e) {
       return document.getElementById(e);
     }
-    function req(theUrl) {
+    function req(url) {
       var xhr = new XMLHttpRequest();
       res = "";
       xhr.onreadystatechange = function() {
@@ -21,7 +22,7 @@
           res = this.responseText;
         }
       };
-      xhr.open("GET", theUrl, true); // true for asynchronous
+      xhr.open("GET", url, true); // true for asynchronous
       xhr.send(null);
       return res;
     }
@@ -45,9 +46,9 @@
     	gebID(e).style = "font-weight:" + fw;
     }
     function setTF(e, v) {
-      var re=/^-?[0-9]+$/;
+      var regex=/^-?[0-9]+$/;
       var old = gebID(e).value;
-      if (!v.match(re)) {
+      if (!v.match(regex)) {
         gebID(e+'v').value = old;
         return false;
       }
@@ -61,6 +62,30 @@
         gebID(e).value = v;
       }
       setV(e, gebID(e).value);
+      st();
+    }
+    function more() {
+      var vis = document.getElementsByClassName("more");
+      var i = 0;
+      if (vis[i].style.display == "none") {
+        for (i=0; i<vis.length; i++) {
+          vis[i].style.display = "block";
+        }
+        gebID("more").innerHTML = "Less";
+      } else {
+        for (i=0; i<vis.length; i++) {
+          vis[i].style.display = "none";
+        }
+        gebID("more").innerHTML = "More";
+      }
+    }
+    function st() {
+      gebID('st').disabled = false;
+    }
+    function sldr(e) {
+      st();
+      setV(e, gebID(e).value);
+      gebID(e+'v').value=gebID(e).value;
     }
   </script>
   <style>
@@ -76,35 +101,89 @@
     }
     button {
       width: 100px;
+      margin: 5px 5px 0px 5px;
     }
     input[type=text] {
       text-align: center;
+      margin: 10px 10px -10px 10px;
     }
     div {
       text-align: center;
+      margin-bottom: 10px;
+    }
+    legend {
+      padding-left: 10px;
+      padding-right: 10px;
+    }
+    .more {
+      display: none;
+    }
+    h1 {
+      font-size: 30pt;
+      margin-bottom: 14px;
     }
   </style>
 </head>
-<body onload="getV('b'); getV('s'); btnclr('on');">
+<body onload="getV('b'); getV('s'); getV('bl'); getV('sl'); getV('gl'); getV('rl'); btnclr('on');">
   <p align="center">
-    <button id="off" onclick="setV('b',0); btnclr('off');">OFF</button>&nbsp;
-    <button id="on" onclick="setV('b', gebID('b').value); btnclr('on');">ON</button>
-    <br />
-    <fieldset>
-      <legend align="center">Brightness</legend>
-      <div>
-        <input type="range" min="0" max="255" id="b" onchange="setV('b', this.value); gebID('bv').value=this.value;">
-        <input type="text" id="bv" size="3" onchange="setTF('b', this.value);">
-      </div>
-    </fieldset>
-    <br />
-    <fieldset>
-      <legend align="center">Mic Sensitivity</legend>
-      <div>
-        <input type="range" min="0" max="255" id="s" onchange="setV('s', this.value); gebID('sv').value=this.value;">
-        <input type="text" id="sv" size="3" onchange="setTF('s', this.value);">
-      </div>
-    </fieldset>
+    <div>
+      <fieldset>
+        <legend align="center">Brightness</legend>
+          <input type="range" min="0" max="255" id="b" onchange="sldr('b')">
+          <button id="off" onclick="setV('b',0); btnclr('off');">OFF</button>
+          <input type="text" id="bv" size="3" onchange="setTF('b', this.value);">
+          <button id="on" onclick="setV('b', gebID('b').value); btnclr('on');">ON</button>
+      </fieldset>
+    </div>
+    <div>
+      <fieldset>
+        <legend align="center">Mic Sensitivity</legend>
+        <div>
+          <input type="range" min="0" max="255" id="s" onchange="sldr('s')">
+          <input type="text" id="sv" size="3" onchange="setTF('s', this.value);">
+        </div>
+      </fieldset>
+    </div>
+    <div class="more" style="display: none;">
+      <fieldset>
+        <legend align="center">Mic Baseline</legend>
+        <div>
+          <input type="range" min="0" max="255" id="bl" onchange="sldr('bl')">
+          <input type="text" id="blv" size="3" onchange="setTF('bl', this.value);">
+        </div>
+      </fieldset>
+    </div>
+    <div class="more" style="display: none;">
+      <fieldset>
+        <legend align="center">Mic Slope</legend>
+        <div>
+          <input type="range" min="0" max="255" id="sl" onchange="sldr('sl')">
+          <input type="text" id="slv" size="3" onchange="setTF('sl', this.value);">
+        </div>
+      </fieldset>
+    </div>
+    <div class="more" style="display: none;">
+      <fieldset>
+        <legend align="center">Green Limit</legend>
+        <div>
+          <input type="range" min="0" max="255" id="gl" onchange="sldr('gl')">
+          <input type="text" id="glv" size="3" onchange="setTF('gl', this.value);">
+        </div>
+      </fieldset>
+    </div>
+    <div class="more" style="display: none;">
+      <fieldset>
+        <legend align="center">Red Limit</legend>
+        <div>
+          <input type="range" min="0" max="255" id="rl" onchange="sldr('rl')">
+          <input type="text" id="rlv" size="3" onchange="setTF('rl', this.value);">
+        </div>
+      </fieldset>
+    </div>
+    <div>
+      <button id="more" onclick="more();">More</button>
+      <button id="st" disabled onclick="setV('st', 1); this.disabled=true">Store</button>
+    </div>
   </p>
 </body>
 </html>
