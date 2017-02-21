@@ -25,8 +25,8 @@ uint16_t val = 0;
 uint16_t maxVal = 0;
 
 #define MIC_PIN A0
-#define MIC_MAX_VALUE 675
-uint16_t baseline = 330;
+#define MIC_MAX_VALUE 1023 //675
+uint16_t baseline = 498;
 uint8_t slope = 128;
 #define MAX_SLOPE 10
 uint8_t green_lim = 88;
@@ -75,6 +75,7 @@ uint8_t slopeVal(uint16_t x, uint16_t maxX) {
 void loop(void) {
   // read mic signal in [0, MIC_MAX_VALUE] centered around baseline
   val = analogRead(MIC_PIN);
+  //Serial.println(val);
 
   // get absolute value of mic signal in [0, maxVal]
   val = val > baseline ? val - baseline : baseline - val;
@@ -89,7 +90,7 @@ void loop(void) {
   }
 
   // clip mic signal to [0, maxVal]
-  val = (uint16_t)(min(max(0, val), maxVal) * (5.0/3.3));
+  val = (uint16_t)(min(max(0, val), maxVal));// * (5.0/3.3));
 
   if (millis() < nextFrame) {
     valBufMax[valBufMax_i] = val;
@@ -170,7 +171,7 @@ void handleSerial(){
       if (receiveBytes(6)) {
         brightness = inBuff[0];
         sensitivity = inBuff[1];
-        baseline = (uint16_t)((inBuff[2] + 384) * (3.3/5.0));
+        baseline = (uint16_t)((inBuff[2] + 384));// * (3.3/5.0));
         slope = inBuff[3];
         green_lim = inBuff[4];
         red_lim = inBuff[5];
