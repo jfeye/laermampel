@@ -1,6 +1,6 @@
 <!DOCTYPE HTML>
 <!--
-  Run this page through
+  Run this code through
   https://htmlcompressor.com/compressor/
   and remove linebreaks
   before pasting it in html_index.h
@@ -16,13 +16,14 @@
     }
     function req(url) {
       var xhr = new XMLHttpRequest();
-      res = "";
+      var res = "";
       xhr.onreadystatechange = function() {
         if (this.readyState == 4 && this.status == 200) {
           res = this.responseText;
+          //console.log(res);
         }
       };
-      xhr.open("GET", url, true); // true for asynchronous
+      xhr.open("GET", url, false); // true for asynchronous
       xhr.send(null);
       return res;
     }
@@ -122,6 +123,9 @@
     fieldset {
       height: 105px;
     }
+    img {
+      padding-top: 5px;
+    }
   </style>
 </head>
 <body onload="getV('b'); getV('s'); getV('bl'); getV('sl'); getV('gl'); getV('rl'); btnclr('on');">
@@ -158,7 +162,10 @@
         <legend align="center">Mic Slope</legend>
         <div>
           <input type="range" min="0" max="255" id="sl" onchange="sldr('sl')">
-          <input type="text" id="slv" size="3" onchange="setTF('sl', this.value);">
+          <img align="left" src='data:image/png;base64,R0lGODlhHgAeAKEAAP///wAAAP///////yH5BAEKAAIALAAAAAAeAB4AAAJHhI+Jwe2h1Js0GopnzM167YWHI5ZXZ4pkqjJsC70hKlt0ndz44u5S7+PFgiMgEaALGolJX3P3xEVrU1n1dWVlU1tTt/QVFQAAOw==' />
+          <img align="center" src='data:image/png;base64,R0lGODlhHgAeAKEAAP///wAAAP///////yH5BAEKAAIALAAAAAAeAB4AAAJAhI+pGuuPgoQ0yVvrnRnu1j1fKG6kM56MqVpse6SwIc81fLe5up89+QsFO8NMUfOyJXFLXZP39EWBUyloZsEmCgA7' />
+          <img align="right" src='data:image/png;base64,R0lGODlhHgAeAKEAAP///wAAAP///////yH5BAEKAAIALAAAAAAeAB4AAAJHhI+pGr0PTwuxMmczmDrzXmEg9I1PaV5UuqCsJL7wKhuufL85u5u9H8P9QMPOhFYreo7JIxLoTDmZmqk1ZM1Ws8pEtAYoAAA7' />
+          <input style="display:none" type="text" id="slv">
         </div>
       </fieldset>
     </div>

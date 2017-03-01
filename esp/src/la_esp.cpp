@@ -24,6 +24,7 @@ void handleGet();
 void sendSerial();
 void storeValues();
 void readValues();
+void printValues();
 
 uint8_t brightness = 0;
 uint8_t sensitivity = 0;
@@ -42,10 +43,12 @@ void setup(void){
   EEPROM.begin(512);
   delay(250);
   readValues();
+  delay(250);
 
   // Set up WiFi
   WiFi.mode(WIFI_AP);
   WiFi.disconnect();
+  delay(250);
   WiFi.softAP(SSID, PASSWD);
 
   IPAddress myIP = WiFi.softAPIP();
@@ -145,6 +148,21 @@ void readValues() {
   slope       = EEPROM.read(3);
   green_lim   = EEPROM.read(4);
   red_lim     = EEPROM.read(5);
+  printValues();
+}
+
+void printValues() {
+  Serial.print(brightness);
+  Serial.print(",");
+  Serial.print(sensitivity);
+  Serial.print(",");
+  Serial.print(baseline);
+  Serial.print(",");
+  Serial.print(slope);
+  Serial.print(",");
+  Serial.print(green_lim);
+  Serial.print(",");
+  Serial.println(red_lim);
 }
 
 void storeValues() {
@@ -155,6 +173,7 @@ void storeValues() {
   EEPROM.write(4, green_lim);
   EEPROM.write(5, red_lim);
   EEPROM.commit();
+  printValues();
 }
 
 void handleSet() {
